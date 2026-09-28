@@ -1,0 +1,20 @@
+{
+  "name": "@glr/worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx src/main.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node --import tsx --test src/reconciliation.test.ts"
+  },
+  "dependencies": {
+    "@glr/config": "0.1.0",
+    "@glr/db": "0.1.0",
+    "@glr/provider-events": "0.1.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  }
+}

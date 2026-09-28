@@ -1,0 +1,47 @@
+services:
+  postgres:
+    container_name: velo-staging-postgres
+    env_file: .env.staging.example
+    environment:
+      POSTGRES_DB: great_lakes_remit_staging
+      POSTGRES_USER: staging
+      POSTGRES_PASSWORD: staging-local-password
+    ports:
+      - "127.0.0.1:5543:5432"
+    volumes:
+      - staging-postgres-data:/var/lib/postgresql/data
+
+  redis:
+    container_name: velo-staging-redis
+    env_file: .env.staging.example
+    command: ["redis-server", "--requirepass", "staging-redis-password"]
+    ports:
+      - "127.0.0.1:6380:6379"
+
+  api:
+    container_name: velo-staging-api
+    env_file: .env.staging.example
+    environment:
+      DATABASE_URL: postgresql://staging:staging-local-password@postgres:5432/great_lakes_remit_staging?schema=public
+      REDIS_URL: redis://:staging-redis-password@redis:6379
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4000/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  worker:
+    container_name: velo-staging-worker
+    env_file: .env.staging.example
+    environment:
+      DATABASE_URL: postgresql://staging:staging-local-password@postgres:5432/great_lakes_remit_staging?schema=public
+      REDIS_URL: redis://:staging-redis-password@redis:6379
+
+  admin:
+    container_name: velo-staging-admin
+    build:
+      args:
+        VITE_API_BASE_URL: http://localhost:4100
+
+volumes:
+  staging-postgres-data:

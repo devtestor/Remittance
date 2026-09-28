@@ -1,0 +1,351 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  sender
+  admin
+  compliance
+}
+
+enum KycStatus {
+  not_started
+  pending
+  approved
+  rejected
+  expired
+}
+
+enum CountryCode {
+  US
+  RW
+  KE
+  UG
+  TZ
+  CD
+}
+
+enum CurrencyCode {
+  USD
+  RWF
+  KES
+  UGX
+  TZS
+  CDF
+}
+
+enum PaymentMethod {
+  card
+  bank_account
+  mobile_money
+  crypto_wallet
+}
+
+enum PayoutMethod {
+  mobile_money
+  bank_account
+  crypto_wallet
+}
+
+enum TransferStatus {
+  draft
+  quoted
+  pending_payment
+  payment_received
+  under_review
+  processing_payout
+  completed
+  failed
+  cancelled
+}
+
+enum TransferFailureReason {
+  payment_failed
+  payout_failed
+  compliance_rejected
+  expired
+  cancelled_by_user
+  cancelled_by_admin
+}
+
+enum LedgerEntrySide {
+  debit
+  credit
+}
+
+enum ProviderEventStatus {
+  received
+  processed
+  failed
+  ignored
+}
+
+enum AuditActorType {
+  user
+  admin
+  system
+  provider
+}
+
+model User {
+  id            String        @id @default(cuid())
+  role          UserRole      @default(sender)
+  email         String        @unique
+  phoneNumber   String?       @unique
+  countryCode   CountryCode
+  kycStatus     KycStatus     @default(not_started)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  beneficiaries Beneficiary[]
+  kycCases      KycCase[]
+  transfers     Transfer[]    @relation("SenderTransfers")
+  auditLogs     AuditLog[]    @relation("UserAuditLogs")
+  sessions      Session[]
+
+  @@index([countryCode])
+  @@index([kycStatus])
+}
+
+model AdminUser {
+  id           String         @id @default(cuid())
+  email        String         @unique
+  passwordHash String
+  role         UserRole       @default(admin)
+  disabledAt   DateTime?
+  lastLoginAt  DateTime?
+  failedLoginAttempts Int       @default(0)
+  lockedUntil  DateTime?
+  mfaSecret    String?
+  mfaEnabled   Boolean         @default(false)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  sessions     AdminSession[]
+  auditLogs    AuditLog[]     @relation("AdminUserAuditLogs")
+
+  @@index([role])
+  @@index([disabledAt])
+  @@index([lockedUntil])
+}
+
+model AdminSession {
+  id          String    @id @default(cuid())
+  tokenHash   String    @unique
+  adminUserId String
+  expiresAt   DateTime
+  createdAt   DateTime  @default(now())
+  adminUser    AdminUser @relation(fields: [adminUserId], references: [id], onDelete: Cascade)
+
+  @@index([adminUserId, expiresAt])
+  @@index([expiresAt])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@index([expiresAt])
+}
+
+model OtpChallenge {
+  id             String    @id @default(cuid())
+  email          String
+  phoneNumber    String
+  countryCode    CountryCode
+  codeHash       String
+  attempts       Int       @default(0)
+  expiresAt      DateTime
+  consumedAt     DateTime?
+  createdAt      DateTime  @default(now())
+
+  @@index([email, createdAt])
+  @@index([phoneNumber, createdAt])
+  @@index([expiresAt])
+}
+
+model KycCase {
+  id             String    @id @default(cuid())
+  userId         String
+  status         KycStatus @default(pending)
+  legalName      String?
+  documentType   String?
+  provider       String?
+  providerCaseId String?
+  submittedAt    DateTime?
+  reviewedAt     DateTime?
+  expiresAt       DateTime?
+  rejectionReason String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  user            User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([provider, providerCaseId])
+  @@index([userId, status])
+}
+
+model Beneficiary {
+  id             String       @id @default(cuid())
+  userId         String
+  displayName    String
+  countryCode    CountryCode
+  payoutMethod   PayoutMethod
+  payoutToken    String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  user           User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+  transfers      Transfer[]
+
+  @@index([userId])
+  @@index([countryCode, payoutMethod])
+}
+
+model TransferQuote {
+  id                      String       @id
+  senderUserId            String?
+  sourceAmountMinor       Decimal      @db.Decimal(20, 0)
+  sourceCurrency          CurrencyCode
+  destinationAmountMinor  Decimal      @db.Decimal(20, 0)
+  destinationCurrency     CurrencyCode
+  feeAmountMinor          Decimal      @db.Decimal(20, 0)
+  feeCurrency             CurrencyCode
+  exchangeRate            Decimal      @db.Decimal(24, 12)
+  expiresAt               DateTime
+  createdAt               DateTime     @default(now())
+  transfers               Transfer[]
+
+  @@index([senderUserId])
+  @@index([expiresAt])
+}
+
+model Transfer {
+  id                      String                 @id @default(cuid())
+  senderUserId            String
+  beneficiaryId           String
+  quoteId                 String
+  sourceAmountMinor       Decimal                @db.Decimal(20, 0)
+  sourceCurrency          CurrencyCode
+  destinationAmountMinor  Decimal                @db.Decimal(20, 0)
+  destinationCurrency     CurrencyCode
+  feeAmountMinor          Decimal                @db.Decimal(20, 0)
+  feeCurrency             CurrencyCode
+  exchangeRate            Decimal                @db.Decimal(24, 12)
+  paymentMethod           PaymentMethod
+  payoutMethod            PayoutMethod
+  status                  TransferStatus         @default(pending_payment)
+  failureReason           TransferFailureReason?
+  idempotencyKey          String                 @unique
+  createdAt               DateTime               @default(now())
+  updatedAt               DateTime               @updatedAt
+  sender                  User                   @relation("SenderTransfers", fields: [senderUserId], references: [id], onDelete: Restrict)
+  beneficiary             Beneficiary            @relation(fields: [beneficiaryId], references: [id], onDelete: Restrict)
+  quote                   TransferQuote          @relation(fields: [quoteId], references: [id], onDelete: Restrict)
+  stateChanges            TransferStateChange[]
+  providerEvents          ProviderEvent[]
+  ledgerTransactions      LedgerTransaction[]
+
+  @@index([senderUserId, createdAt])
+  @@index([beneficiaryId])
+  @@index([status, createdAt])
+}
+
+model TransferStateChange {
+  id         String         @id @default(cuid())
+  transferId String
+  fromStatus TransferStatus?
+  toStatus   TransferStatus
+  reason     String?
+  actorType  AuditActorType @default(system)
+  actorId    String?
+  createdAt  DateTime       @default(now())
+  transfer   Transfer       @relation(fields: [transferId], references: [id], onDelete: Restrict)
+
+  @@index([transferId, createdAt])
+}
+
+model LedgerAccount {
+  id          String          @id
+  currency    CurrencyCode
+  name        String
+  createdAt   DateTime        @default(now())
+  entries     LedgerEntry[]
+
+  @@index([currency])
+}
+
+model LedgerTransaction {
+  id             String        @id @default(cuid())
+  transferId     String?
+  idempotencyKey String        @unique
+  memo           String
+  postedAt       DateTime      @default(now())
+  transfer       Transfer?     @relation(fields: [transferId], references: [id], onDelete: Restrict)
+  entries        LedgerEntry[]
+
+  @@index([transferId])
+  @@index([postedAt])
+}
+
+model LedgerEntry {
+  id                  String            @id @default(cuid())
+  ledgerTransactionId String
+  accountId           String
+  side                LedgerEntrySide
+  amountMinor         Decimal           @db.Decimal(20, 0)
+  currency            CurrencyCode
+  memo                String
+  createdAt           DateTime          @default(now())
+  ledgerTransaction   LedgerTransaction @relation(fields: [ledgerTransactionId], references: [id], onDelete: Restrict)
+  account             LedgerAccount     @relation(fields: [accountId], references: [id], onDelete: Restrict)
+
+  @@index([accountId, createdAt])
+  @@index([ledgerTransactionId])
+}
+
+model ProviderEvent {
+  id             String              @id @default(cuid())
+  provider       String
+  eventType      String
+  providerEventId String?
+  idempotencyKey String              @unique
+  transferId     String?
+  status         ProviderEventStatus @default(received)
+  retryCount     Int                 @default(0)
+  payload        Json
+  receivedAt     DateTime            @default(now())
+  processedAt    DateTime?
+  errorMessage   String?
+  transfer       Transfer?           @relation(fields: [transferId], references: [id], onDelete: Restrict)
+
+  @@unique([provider, providerEventId])
+  @@index([provider, eventType])
+  @@index([transferId])
+  @@index([status, receivedAt])
+}
+
+model AuditLog {
+  id          String         @id @default(cuid())
+  actorType   AuditActorType
+  actorUserId String?
+  actorAdminUserId String?
+  action      String
+  entityType  String
+  entityId    String
+  metadata    Json?
+  createdAt   DateTime       @default(now())
+  actorUser   User?          @relation("UserAuditLogs", fields: [actorUserId], references: [id], onDelete: Restrict)
+  actorAdminUser AdminUser?   @relation("AdminUserAuditLogs", fields: [actorAdminUserId], references: [id], onDelete: Restrict)
+
+  @@index([actorUserId, createdAt])
+  @@index([actorAdminUserId, createdAt])
+  @@index([entityType, entityId])
+  @@index([action, createdAt])
+}

@@ -1,0 +1,46 @@
+{
+  "name": "great-lakes-remit",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Mobile-first remittance and digital finance platform.",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "typecheck": "tsc -b --pretty",
+    "test:domain": "npm run typecheck && node --test packages/ledger/dist/*.test.js packages/transfers/dist/*.test.js",
+    "test:security": "npm run test:security -w @glr/api && npm run test:security -w @glr/db",
+    "test:reliability": "npm run test -w @glr/worker",
+    "test:e2e": "node --import tsx scripts/e2e-smoke.ts",
+    "staging:up": "APP_ENV_FILE=.env.staging.example API_HOST_PORT=4100 ADMIN_HOST_PORT=8180 docker compose --env-file .env.staging.example -f docker-compose.production.yml -f docker-compose.staging.yml up -d --build",
+    "staging:down": "docker compose -f docker-compose.production.yml -f docker-compose.staging.yml down",
+    "db:generate": "prisma generate --schema packages/db/prisma/schema.prisma",
+    "db:validate": "prisma validate --schema packages/db/prisma/schema.prisma",
+    "db:migrate:dev": "prisma migrate dev --schema packages/db/prisma/schema.prisma",
+    "dev:db": "docker compose up -d postgres",
+    "dev:api": "npm run dev -w @glr/api",
+    "dev:admin": "npm run dev -w @glr/admin",
+    "dev:mobile": "npm run start -w @glr/mobile",
+    "lint": "echo \"lint pipeline not configured yet\"",
+    "test": "echo \"test pipeline not configured yet\""
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "@types/node": "^26.5.0",
+    "prisma": "^5.22.0",
+    "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "zod": "^4.5.4"
+  },
+  "overrides": {
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-native": "0.86.3"
+  }
+}

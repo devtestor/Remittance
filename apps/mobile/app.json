@@ -1,0 +1,19 @@
+{
+  "expo": {
+    "name": "Velo Remit",
+    "slug": "velo-remit",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "veloremit",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.velo.remit"
+    },
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "name": "@glr/db",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "generate": "prisma generate --schema prisma/schema.prisma",
+    "test:security": "node --import tsx --test src/security.test.ts",
+    "validate": "prisma validate --schema prisma/schema.prisma",
+    "migrate:dev": "prisma migrate dev --schema prisma/schema.prisma"
+  },
+  "dependencies": {
+    "@glr/ledger": "0.1.0",
+    "@glr/types": "0.1.0",
+    "@prisma/client": "^5.22.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  }
+}

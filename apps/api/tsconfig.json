@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "rootDir": "src",
+    "outDir": "dist"
+  },
+  "include": ["src"],
+  "references": [
+    { "path": "../../packages/config" },
+    { "path": "../../packages/db" },
+    { "path": "../../packages/ledger" },
+    { "path": "../../packages/provider-events" },
+    { "path": "../../packages/transfers" },
+    { "path": "../../packages/types" }
+  ]
+}

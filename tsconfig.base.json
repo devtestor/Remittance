@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "baseUrl": ".",
+    "paths": {
+      "@glr/config": ["packages/config/src/index.ts"],
+      "@glr/ledger": ["packages/ledger/src/index.ts"],
+      "@glr/transfers": ["packages/transfers/src/index.ts"],
+      "@glr/types": ["packages/types/src/index.ts"],
+      "@glr/ui": ["packages/ui/src/index.ts"],
+      "@glr/db": ["packages/db/src/index.ts"]
+    }
+  }
+}

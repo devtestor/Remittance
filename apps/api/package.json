@@ -1,0 +1,26 @@
+{
+  "name": "@glr/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx src/main.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test:security": "node --import tsx --test src/totp.test.ts src/rate-limit.test.ts src/smile.test.ts"
+  },
+  "dependencies": {
+    "@glr/config": "0.1.0",
+    "@glr/db": "0.1.0",
+    "@glr/ledger": "0.1.0",
+    "@glr/provider-events": "0.1.0",
+    "@glr/transfers": "0.1.0",
+    "@glr/types": "0.1.0",
+    "redis": "^5.12.1",
+    "smile-identity-core": "^3.2.1",
+    "zod": "^4.1.5"
+  },
+  "devDependencies": {
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  }
+}
